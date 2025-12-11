@@ -1,0 +1,19 @@
+# Sanal Ortam
+.venv/
+venv/
+env/
+
+# PyCharm Ayarları
+.idea/
+
+# Derlenmiş Python Dosyaları
+__pycache__/
+*.pyc
+
+# Veri Dosyaları
+*.bin
+users.json
+secret.key
+
+# İşletim Sistemi Dosyaları
+.DS_Store

@@ -45,18 +45,17 @@ class UserManager:
         else:
             return False, "Parola hatalı!"
 
-    # --- YENİ EKLENEN FONKSİYON ---
     def delete_user(self, username):
-        """Kullanıcıyı JSON'dan ve dosyasını diskten siler."""
         if username in self.users:
-            # 1. Kullanıcıyı listeden sil
             del self.users[username]
             self.save_users()
-
-            # 2. Kullanıcının not dosyasını sil
             user_file = get_path(f"notlar_{username}.bin")
             if os.path.exists(user_file):
                 os.remove(user_file)
-
-            return True, "Hesap ve tüm veriler kalıcı olarak silindi."
+            return True, "Hesap ve tüm veriler silindi."
         return False, "Kullanıcı bulunamadı."
+
+
+    def get_all_usernames(self):
+        """Kayıtlı kullanıcı adlarının listesini döndürür."""
+        return list(self.users.keys())

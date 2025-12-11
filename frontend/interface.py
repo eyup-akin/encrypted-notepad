@@ -8,6 +8,7 @@ ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
 
 
+# --- YENİ NETFLIX TARZI GİRİŞ EKRANI ---
 class LoginWindow(ctk.CTk):
     def __init__(self, on_success_callback):
         super().__init__()
@@ -15,56 +16,125 @@ class LoginWindow(ctk.CTk):
         self.user_manager = UserManager()
 
         self.title("Giriş Yap - SecureNotes")
-        self.geometry("400x450")
+        self.geometry("400x500")
         self.resizable(False, False)
 
-        self.frame = ctk.CTkFrame(self, width=320, height=360, corner_radius=15)
-        self.frame.place(relx=0.5, rely=0.5, anchor="center")
+        # Ana Konteyner (Tüm sayfalar bunun içinde değişecek)
+        self.container = ctk.CTkFrame(self, corner_radius=15)
+        self.container.pack(fill="both", expand=True, padx=20, pady=20)
 
-        ctk.CTkLabel(self.frame, text="HOŞ GELDİNİZ", font=("Roboto Medium", 20)).place(relx=0.5, rely=0.15,
-                                                                                        anchor="center")
+        # İlk açılışta profil listesini göster
+        self.show_profile_selection()
 
-        self.entry_user = ctk.CTkEntry(self.frame, width=220, placeholder_text="Kullanıcı Adı")
-        self.entry_user.place(relx=0.5, rely=0.35, anchor="center")
+    def clear_container(self):
+        """Konteynerin içindeki her şeyi temizler."""
+        for widget in self.container.winfo_children():
+            widget.destroy()
 
-        self.entry_pass = ctk.CTkEntry(self.frame, width=220, placeholder_text="Parola", show="*")
-        self.entry_pass.place(relx=0.5, rely=0.5, anchor="center")
+    # --- SAHNE 1: PROFİL SEÇİMİ ---
+    def show_profile_selection(self):
+        self.clear_container()
 
-        ctk.CTkButton(self.frame, text="GİRİŞ YAP", command=self.login, width=220, height=40, corner_radius=20).place(
-            relx=0.5, rely=0.7, anchor="center")
-        ctk.CTkButton(self.frame, text="HESAP OLUŞTUR", command=self.register, width=220, height=30,
-                      fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE")).place(relx=0.5,
-                                                                                                      rely=0.85,
-                                                                                                      anchor="center")
+        ctk.CTkLabel(self.container, text="KİM GİRİŞ YAPIYOR?", font=("Roboto Medium", 18)).pack(pady=(30, 20))
 
-    def login(self):
-        user = self.entry_user.get()
+        # Kullanıcı listesini al
+        users = self.user_manager.get_all_usernames()
+
+        # Kaydırılabilir alan (Çok kullanıcı olursa taşmasın diye)
+        scroll_frame = ctk.CTkScrollableFrame(self.container, fg_color="transparent")
+        scroll_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        if not users:
+            ctk.CTkLabel(scroll_frame, text="Henüz kayıtlı kullanıcı yok.", text_color="gray").pack(pady=20)
+
+        for user in users:
+            # Her kullanıcı için bir kart/buton
+            btn = ctk.CTkButton(scroll_frame, text=user,
+                                command=lambda u=user: self.show_password_input(u),
+                                height=50, corner_radius=10,
+                                fg_color="#2B2B2B", hover_color="#3A3A3A",
+                                font=("Roboto", 16))
+            btn.pack(fill="x", pady=5, padx=5)
+
+        # Alt Kısım: Yeni Profil Ekle
+        ctk.CTkButton(self.container, text="+ YENİ PROFİL OLUŞTUR", command=self.show_register_input,
+                      fg_color="transparent", border_width=2, text_color=("gray10", "#DCE4EE"),
+                      height=40).pack(side="bottom", pady=20, padx=20, fill="x")
+
+    # --- SAHNE 2: ŞİFRE GİRME ---
+    def show_password_input(self, username):
+        self.clear_container()
+
+        # Geri Dön Butonu (Sol Üst)
+        ctk.CTkButton(self.container, text="< Geri", command=self.show_profile_selection,
+                      width=60, fg_color="transparent", text_color="gray").pack(anchor="w", padx=10, pady=10)
+
+        ctk.CTkLabel(self.container, text=f"Merhaba, {username}", font=("Roboto", 22, "bold")).pack(pady=(20, 10))
+        ctk.CTkLabel(self.container, text="Devam etmek için şifreni gir", font=("Roboto", 12), text_color="gray").pack(
+            pady=(0, 20))
+
+        self.entry_pass = ctk.CTkEntry(self.container, width=220, placeholder_text="Parola", show="*", height=40)
+        self.entry_pass.pack(pady=10)
+
+        # "Enter" tuşuna basınca giriş yapsın
+        self.entry_pass.bind("<Return>", lambda event: self.perform_login(username))
+
+        ctk.CTkButton(self.container, text="GİRİŞ YAP",
+                      command=lambda: self.perform_login(username),
+                      width=220, height=40, corner_radius=20, fg_color="#2CC985", hover_color="#229A65").pack(pady=20)
+
+    # --- SAHNE 3: YENİ KAYIT ---
+    def show_register_input(self):
+        self.clear_container()
+
+        ctk.CTkButton(self.container, text="< Geri", command=self.show_profile_selection,
+                      width=60, fg_color="transparent", text_color="gray").pack(anchor="w", padx=10, pady=10)
+
+        ctk.CTkLabel(self.container, text="YENİ PROFİL", font=("Roboto Medium", 20)).pack(pady=20)
+
+        self.reg_user = ctk.CTkEntry(self.container, width=220, placeholder_text="Kullanıcı Adı")
+        self.reg_user.pack(pady=10)
+
+        self.reg_pass = ctk.CTkEntry(self.container, width=220, placeholder_text="Parola Oluştur", show="*")
+        self.reg_pass.pack(pady=10)
+
+        ctk.CTkButton(self.container, text="KAYDET VE GİRİŞ YAP", command=self.perform_register,
+                      width=220, height=40, corner_radius=20).pack(pady=20)
+
+    # --- MANTIK İŞLEMLERİ ---
+    def perform_login(self, username):
         pwd = self.entry_pass.get()
-        success, msg = self.user_manager.login_user(user, pwd)
+        success, msg = self.user_manager.login_user(username, pwd)
+
         if success:
-            self.on_success(user, pwd)
+            self.on_success(username, pwd)
         else:
+            # Hata mesajı yerine input'u kırmızı yakabiliriz ama şimdilik mesaj kutusu yeterli
             messagebox.showerror("Hata", msg)
+            self.entry_pass.delete(0, "end")
 
-    def register(self):
-        user = self.entry_user.get()
-        pwd = self.entry_pass.get()
+    def perform_register(self):
+        user = self.reg_user.get()
+        pwd = self.reg_pass.get()
+
         if not user or not pwd:
-            messagebox.showwarning("Uyarı", "Alanlar boş olamaz!")
+            messagebox.showwarning("Eksik", "Lütfen tüm alanları doldurun.")
             return
+
         success, msg = self.user_manager.register_user(user, pwd)
         if success:
-            messagebox.showinfo("Başarılı", msg)
+            messagebox.showinfo("Başarılı", "Profil oluşturuldu!")
+            self.show_profile_selection()  # Listeye geri dön ki yeni kullanıcıyı görsün
         else:
             messagebox.showerror("Hata", msg)
 
 
+# --- ANA UYGULAMA (NOT DEFTERİ) - AYNI KALDI ---
 class SecureNotepadApp(ctk.CTk):
-    # DİKKAT: logout_callback parametresi eklendi
     def __init__(self, username, password, logout_callback):
         super().__init__()
         self.username = username
-        self.logout_callback = logout_callback  # Main'e geri dönmek için anahtar
+        self.logout_callback = logout_callback
 
         self.title(f"SecureNotes | {username}")
         self.geometry("1000x650")
@@ -103,16 +173,13 @@ class SecureNotepadApp(ctk.CTk):
         self.scrollable_list.grid(row=2, column=0, padx=20, pady=10, sticky="nsew")
 
         # --- ALT BUTONLAR (SIDEBAR) ---
-        # Butonlar için ayrı bir frame yapalım ki düzenli dursun
         bottom_frame = ctk.CTkFrame(self.sidebar_frame, fg_color="transparent")
         bottom_frame.grid(row=3, column=0, padx=20, pady=20, sticky="ew")
 
-        # 1. Kaydet ve Çık Butonu
         self.btn_save_exit = ctk.CTkButton(bottom_frame, text="🔒 ŞİFRELE & ÇIK", command=self.save_and_exit,
                                            fg_color="#34495E", hover_color="#2C3E50")
         self.btn_save_exit.pack(fill="x", pady=5)
 
-        # 2. YENİ EKLENEN: HESABI SİL BUTONU
         self.btn_delete_account = ctk.CTkButton(bottom_frame, text="⚠️ HESABI SİL",
                                                 command=self.delete_account_permanently, fg_color="#C0392B",
                                                 hover_color="#922B21")
@@ -172,8 +239,6 @@ class SecureNotepadApp(ctk.CTk):
             return
         self.notes[title] = content
         self.update_sidebar_list()
-        # Kayıt bildirimi yerine butonu yanıp söndürebilirsin ama şimdilik pop-up yeterli
-        # messagebox.showinfo("Başarılı", "Not geçici belleğe alındı.")
 
     def delete_note(self):
         title = self.entry_title.get()
@@ -192,17 +257,15 @@ class SecureNotepadApp(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Kritik Hata", str(e))
 
-    # --- HESAP SİLME FONKSİYONU ---
     def delete_account_permanently(self):
         confirm = messagebox.askyesno("DİKKAT",
                                       "Bu işlem GERİ ALINAMAZ!\n\nHesabınız ve tüm şifreli notlarınız kalıcı olarak silinecek.\nDevam etmek istiyor musunuz?")
         if confirm:
             user_mgr = UserManager()
             success, msg = user_mgr.delete_user(self.username)
-
             if success:
                 messagebox.showinfo("Hoşçakal", msg)
-                self.destroy()  # Uygulamayı kapat
-                self.logout_callback()  # Login ekranını geri çağır
+                self.destroy()
+                self.logout_callback()
             else:
                 messagebox.showerror("Hata", msg)

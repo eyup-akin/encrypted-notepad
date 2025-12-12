@@ -1,10 +1,12 @@
 import customtkinter as ctk
-from frontend.interface import LoginWindow, SecureNotepadApp
+# ÖNCEKİ: from frontend.interface import LoginWindow, SecureNotepadApp
+# YENİ HALİ: İlgili dosyalardan ayrı ayrı çekiyoruz
+from frontend.login_ui import LoginWindow
+from frontend.main_ui import SecureNotepadApp
 
 # Global değişkenler (Pencereleri yönetmek için)
 login_app = None
 main_app = None
-
 
 def show_login_screen():
     """Login penceresini başlatır."""
@@ -28,7 +30,7 @@ def show_main_app(username, password):
     if login_app:
         login_app.destroy()
 
-    # Ana uygulamayı başlat ve ona "çıkış yaparsam login'i aç" komutunu ver (show_login_screen)
+    # Ana uygulamayı başlat ve ona "çıkış yaparsam login'i aç" komutunu ver
     main_app = SecureNotepadApp(username, password, logout_callback=show_login_screen)
     main_app.mainloop()
 

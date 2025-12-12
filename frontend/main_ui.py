@@ -5,6 +5,10 @@ import textwrap
 from backend.auth import UserManager
 from backend.crypto import SecurityManager
 
+# Renk Sabitleri (Hover efektleri için)
+HOVER_COLOR = "#3A3A3A"
+DEFAULT_COLOR = "transparent"
+
 
 class SecureNotepadApp(ctk.CTk):
     def __init__(self, username, password, logout_callback):
@@ -45,7 +49,7 @@ class SecureNotepadApp(ctk.CTk):
                                      font=("Roboto", 14, "bold"), text_color="white")
         self.btn_new.grid(row=1, column=0, padx=20, pady=10, sticky="ew")
 
-        self.entry_search = ctk.CTkEntry(self.sidebar_frame, placeholder_text="🔍 Ara...", height=35)
+        self.entry_search = ctk.CTkEntry(self.sidebar_frame, placeholder_text="🔍 Ara (Başlık veya Tarih)...", height=35)
         self.entry_search.grid(row=2, column=0, padx=20, pady=(10, 0), sticky="ew")
         self.entry_search.bind("<KeyRelease>", self.filter_notes)
 
@@ -86,10 +90,9 @@ class SecureNotepadApp(ctk.CTk):
         ctk.CTkButton(self.action_frame, text="Notu Sil", command=self.delete_note, fg_color="#E67E22",
                       hover_color="#D35400", width=80).pack(side="right", padx=5)
 
-        # Başlangıç listesi
         self.update_sidebar_list()
 
-        # --- KLAVYE KISAYOLLARI ---
+        # Kısayollar
         self.bind("<Control-s>", self.save_to_ram)
         self.bind("<Control-n>", self.new_note)
         self.bind("<Control-d>", self.delete_note)
@@ -99,42 +102,78 @@ class SecureNotepadApp(ctk.CTk):
         if not search_query:
             self.update_sidebar_list()
             return
-        filtered_notes = [title for title in self.notes if search_query in title.lower()]
+
+        filtered_notes = []
+        for title, data in self.notes.items():
+            date_str = ""
+            if isinstance(data, dict):
+                date_str = data.get("updated_at", "").lower()
+
+            if (search_query in title.lower()) or (search_query in date_str):
+                filtered_notes.append(title)
+
         self.update_sidebar_list(filtered_notes)
 
     def update_sidebar_list(self, notes_to_show=None):
         if notes_to_show is None:
             notes_to_show = list(self.notes.keys())
 
-        # Listeyi temizle
         for widget in self.scrollable_list.winfo_children():
             widget.destroy()
 
         for title in notes_to_show:
             note_data = self.notes.get(title)
-
-            # Metin kaydırma (Text wrapping)
-            wrapped_title = textwrap.fill(title, width=25)
-            display_text = wrapped_title
-
-            # Tarih kontrolü
+            date_str = ""
             if isinstance(note_data, dict):
                 date_str = note_data.get("updated_at", "")
-                if date_str:
-                    display_text = f"{wrapped_title}\n🕒 {date_str}"
 
-            btn = ctk.CTkButton(self.scrollable_list,
-                                text=display_text,
-                                anchor="w",
-                                command=lambda t=title: self.load_note_content(t),
-                                fg_color="transparent",
-                                border_width=1,
-                                border_color="#3E454F",
-                                text_color=("gray10", "#DCE4EE"),
-                                hover_color=("gray70", "#2B2B2B"))
+            self.create_sidebar_item(title, date_str)
 
-            # Dinamik yükseklik için ipady kullandık
-            btn.pack(fill="x", pady=2, ipady=5)
+    # --- DÜZELTİLEN FONKSİYON ---
+    def create_sidebar_item(self, title, date_str):
+        """Her not için özel bir Frame ve Label yapısı oluşturur."""
+
+        # Taşıyıcı Kutu (Frame)
+        item_frame = ctk.CTkFrame(self.scrollable_list, fg_color=DEFAULT_COLOR, corner_radius=6)
+        item_frame.pack(fill="x", pady=2, padx=2)
+
+        # --- DÜZELTME BURADA YAPILDI ---
+        # shorten yerine fill kullandık. Metin uzunsa alt satıra geçer, kesilmez.
+        # width=25 diyerek sidebar genişliğine uygun yerden kırılmasını sağladık.
+        wrapped_title = textwrap.fill(title, width=25)
+
+        lbl_title = ctk.CTkLabel(item_frame, text=wrapped_title,
+                                 font=("Roboto", 14, "bold"), anchor="w", justify="left")
+        lbl_title.pack(fill="x", padx=10, pady=(5, 0))
+
+        # Tarih Label'ı
+        if date_str:
+            lbl_date = ctk.CTkLabel(item_frame, text=f"🕒 {date_str}",
+                                    font=("Roboto", 11), text_color="gray", anchor="w", justify="left")
+            lbl_date.pack(fill="x", padx=10, pady=(0, 5))
+        else:
+            lbl_title.pack_configure(pady=10)
+
+        # Tıklama Olayları
+        def on_click(event):
+            self.load_note_content(title)
+
+        def on_enter(event):
+            item_frame.configure(fg_color=HOVER_COLOR)
+
+        def on_leave(event):
+            item_frame.configure(fg_color=DEFAULT_COLOR)
+
+        # Tüm bileşenlere event bağla
+        for widget in (item_frame, lbl_title):
+            widget.bind("<Button-1>", on_click)
+            widget.bind("<Enter>", on_enter)
+            widget.bind("<Leave>", on_leave)
+
+        if date_str:
+            item_frame.winfo_children()[1].bind("<Button-1>", on_click)
+            item_frame.winfo_children()[1].bind("<Enter>", on_enter)
+            item_frame.winfo_children()[1].bind("<Leave>", on_leave)
 
     def new_note(self, event=None):
         self.entry_title.delete(0, "end")

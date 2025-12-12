@@ -1,9 +1,9 @@
 import customtkinter as ctk
 from tkinter import messagebox
 import datetime
+import textwrap
 from backend.auth import UserManager
 from backend.crypto import SecurityManager
-import textwrap
 
 
 class SecureNotepadApp(ctk.CTk):
@@ -86,7 +86,13 @@ class SecureNotepadApp(ctk.CTk):
         ctk.CTkButton(self.action_frame, text="Notu Sil", command=self.delete_note, fg_color="#E67E22",
                       hover_color="#D35400", width=80).pack(side="right", padx=5)
 
+        # Başlangıç listesi
         self.update_sidebar_list()
+
+        # --- KLAVYE KISAYOLLARI ---
+        self.bind("<Control-s>", self.save_to_ram)
+        self.bind("<Control-n>", self.new_note)
+        self.bind("<Control-d>", self.delete_note)
 
     def filter_notes(self, event=None):
         search_query = self.entry_search.get().lower()
@@ -107,16 +113,15 @@ class SecureNotepadApp(ctk.CTk):
         for title in notes_to_show:
             note_data = self.notes.get(title)
 
-
+            # Metin kaydırma (Text wrapping)
             wrapped_title = textwrap.fill(title, width=25)
-
             display_text = wrapped_title
 
+            # Tarih kontrolü
             if isinstance(note_data, dict):
                 date_str = note_data.get("updated_at", "")
                 if date_str:
                     display_text = f"{wrapped_title}\n🕒 {date_str}"
-
 
             btn = ctk.CTkButton(self.scrollable_list,
                                 text=display_text,
@@ -128,11 +133,10 @@ class SecureNotepadApp(ctk.CTk):
                                 text_color=("gray10", "#DCE4EE"),
                                 hover_color=("gray70", "#2B2B2B"))
 
-            # Butonun kendi içindeki padding (ipadx, ipady) ile metnin sıkışmasını önleyelim
+            # Dinamik yükseklik için ipady kullandık
             btn.pack(fill="x", pady=2, ipady=5)
 
-
-    def new_note(self):
+    def new_note(self, event=None):
         self.entry_title.delete(0, "end")
         self.text_content.delete("0.0", "end")
         self.entry_title.focus()
@@ -156,7 +160,7 @@ class SecureNotepadApp(ctk.CTk):
 
         self.text_content.insert("0.0", content)
 
-    def save_to_ram(self):
+    def save_to_ram(self, event=None):
         title = self.entry_title.get()
         content = self.text_content.get("0.0", "end").strip()
 
@@ -176,7 +180,7 @@ class SecureNotepadApp(ctk.CTk):
         self.update_sidebar_list()
         self.title(f"SecureNotes | {self.username} (Kaydedildi: {current_time})")
 
-    def delete_note(self):
+    def delete_note(self, event=None):
         title = self.entry_title.get()
         if title in self.notes:
             if messagebox.askyesno("Onay", f"'{title}' notunu silmek istediğine emin misin?"):

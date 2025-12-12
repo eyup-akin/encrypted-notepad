@@ -3,6 +3,7 @@ from tkinter import messagebox
 import datetime
 from backend.auth import UserManager
 from backend.crypto import SecurityManager
+import textwrap
 
 
 class SecureNotepadApp(ctk.CTk):
@@ -99,15 +100,37 @@ class SecureNotepadApp(ctk.CTk):
         if notes_to_show is None:
             notes_to_show = list(self.notes.keys())
 
+        # Listeyi temizle
         for widget in self.scrollable_list.winfo_children():
             widget.destroy()
 
         for title in notes_to_show:
-            btn = ctk.CTkButton(self.scrollable_list, text=title, anchor="w",
+            note_data = self.notes.get(title)
+
+
+            wrapped_title = textwrap.fill(title, width=25)
+
+            display_text = wrapped_title
+
+            if isinstance(note_data, dict):
+                date_str = note_data.get("updated_at", "")
+                if date_str:
+                    display_text = f"{wrapped_title}\n🕒 {date_str}"
+
+
+            btn = ctk.CTkButton(self.scrollable_list,
+                                text=display_text,
+                                anchor="w",
                                 command=lambda t=title: self.load_note_content(t),
-                                fg_color="transparent", border_width=1, border_color="#3E454F",
-                                text_color=("gray10", "#DCE4EE"), hover_color=("gray70", "#2B2B2B"))
-            btn.pack(fill="x", pady=2)
+                                fg_color="transparent",
+                                border_width=1,
+                                border_color="#3E454F",
+                                text_color=("gray10", "#DCE4EE"),
+                                hover_color=("gray70", "#2B2B2B"))
+
+            # Butonun kendi içindeki padding (ipadx, ipady) ile metnin sıkışmasını önleyelim
+            btn.pack(fill="x", pady=2, ipady=5)
+
 
     def new_note(self):
         self.entry_title.delete(0, "end")
